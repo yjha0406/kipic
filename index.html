@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STICK'ON — 붙이고 남는 경험</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --yellow:      #FFD400;
+  --yellow-dim:  rgba(255,212,0,0.15);
+  --pink:        #FF4FA3;
+  --black:       #0A0A0A;
+  --deep:        #111111;
+  --white:       #F5F5F5;
+  --glass-bg:    rgba(255,255,255,0.05);
+  --glass-bd:    rgba(255,255,255,0.09);
+  --glass-sh:    0 12px 40px rgba(0,0,0,0.40);
+  --r:           12px;
+  --blur:        blur(20px);
+  --muted:       rgba(255,255,255,0.38);
+  --mid:         rgba(255,255,255,0.62);
+}
+
+*  { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* CURSOR */
+.cursor {
+  width:18px; height:18px;
+  background: var(--yellow);
+  border-radius:50%;
+  position:fixed; top:0; left:0;
+  pointer-events:none;
+  z-index:9999;
+  mix-blend-mode:difference;
+  transition:transform 0.12s ease;
+}
+.cursor.grow { transform:scale(3.2); }
+
+/* NOISE */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:1000; opacity:0.35;
+}
+
+/* ── MARQUEE ── */
+.marquee-wrap {
+  background: var(--yellow);
+  overflow:hidden; padding:9px 0;
+  position:sticky; top:0; z-index:100;
+}
+.marquee-track {
+  display:flex; white-space:nowrap;
+  animation:mq 14s linear infinite;
+}
+.marquee-track span {
+  font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:1rem; color:var(--black);
+  padding:0 28px; letter-spacing:3px;
+}
+.marquee-track .dot { color:rgba(0,0,0,0.3); padding:0 8px; }
+@keyframes mq { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+/* ── PAGE NAV ── */
+.page-nav {
+  position:sticky; top:0; z-index:200;
+  background:rgba(8,8,15,0.88);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex; justify-content:center;
+}
+.page-nav-btn {
+  font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:0.95rem; letter-spacing:4px;
+  color:rgba(255,255,255,0.30);
+  background:none; border:none;
+  padding:15px 44px;
+  cursor:pointer; position:relative;
+  transition:color 0.2s;
+}
+.page-nav-btn::after {
+  content:'';
+  position:absolute; bottom:0; left:50%; right:50%;
+  height:2px;
+  background:var(--yellow);
+  transition:left 0.3s ease, right 0.3s ease;
+  border-radius:2px;
+}
+.page-nav-btn.active { color:var(--white); }
+.page-nav-btn.active::after { left:18%; right:18%; }
+
+/* ── PAGE SWITCH ── */
+.page { display:none; }
+.page.active { display:block; }
+
+/* ── SCROLL REVEAL ── */
+.reveal {
+  opacity:0; transform:translateY(28px);
+  transition:opacity 0.7s cubic-bezier(0.22,1,0.36,1),
+             transform 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* ── SECTION BASE ── */
+section { padding:112px 24px; position:relative; background:var(--black); }
+
+.section-label {
+  font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  font-size:0.62rem; letter-spacing:6px;
+  text-transform:uppercase;
+  color:var(--muted); margin-bottom:12px; display:block;
+}
+/* 섹션 타이틀 */
+.section-title {
+  font-family:'Montserrat','Noto Sans KR',sans-serif;
+  font-weight: 800;
+  font-size:clamp(36px,6.5vw,68px);
+  line-height:1.05; letter-spacing:-0.03em;
+  margin-bottom:44px; color:var(--white);
+}
+/* 선언형 대형 카피 */
+.declare {
+  font-family:'Montserrat','Noto Sans KR',sans-serif;
+  font-weight: 900;
+  font-size:clamp(1.5rem,3.5vw,2.6rem);
+  line-height:1.25; letter-spacing:-0.02em;
+  color:var(--white);
+}
+
+/* glass card */
+.g-card {
+  background:var(--glass-bg);
+  border:1px solid var(--glass-bd);
+  border-radius:var(--r);
+  box-shadow:var(--glass-sh);
+  backdrop-filter:var(--blur);
+  -webkit-backdrop-filter:var(--blur);
+}
+
+/* ── HERO (franchise) ── */
+.hero {
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  text-align:center;
+  padding:120px 24px 100px;
+  position:relative; overflow:hidden;
+  background:#0A0A0A;
+}
+/* ── 히어로 배경 이미지 ── 파일명만 바꾸면 교체 가능 */
+.hero-bg-img {
+  position:absolute; inset:0;
+  background-image: url('images/machine.jpg'); /* 👈 이미지 교체 시 여기만 수정 */
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+.hero-bg-img::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.70); /* 👈 오버레이 투명도 조절 */
+}
+.hero-bg {
+  position:absolute; inset:0; z-index:1;
+  background:
+    radial-gradient(ellipse 70% 60% at 15% 20%, rgba(255,212,0,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 70% at 85% 75%, rgba(255,79,163,0.04) 0%, transparent 55%);
+  animation:meshShift 16s ease-in-out infinite alternate;
+}
+@keyframes meshShift {
+  0%   { opacity:1;    transform:scale(1)    translateY(0); }
+  100% { opacity:0.88; transform:scale(1.03) translateY(-8px); }
+}
+.hero-orb {
+  position:absolute; border-radius:50%;
+  filter:blur(80px); pointer-events:none;
+  animation:orbFloat 10s ease-in-out infinite;
+}
+.hero-orb:nth-child(1){ width:300px;height:300px;background:rgba(255,212,0,0.07);top:-60px;left:-40px; }
+.hero-orb:nth-child(2){ width:240px;height:240px;background:rgba(255,79,163,0.06);bottom:-50px;right:-30px;animation-delay:3s; }
+.hero-orb:nth-child(3){ width:160px;height:160px;background:rgba(255,212,0,0.04);top:40%;left:60%;animation-delay:1.5s; }
+@keyframes orbFloat {
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%    { transform:translate(18px,-26px) scale(1.07); }
+}
+@keyframes fadeUp {
+  from{ opacity:0; transform:translateY(36px) scale(0.98); }
+  to  { opacity:1; transform:translateY(0)    scale(1); }
+}
+
+.hero-glass {
+  position:relative; z-index:2;
+  background:rgba(0,0,0,0.45);
+  border:1px solid rgba(255,255,255,0.09);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-radius:28px;
+  padding:60px 52px 52px;
+  max-width:760px; width:100%;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.10);
+  opacity:0;
+  animation:fadeUp 1s cubic-bezier(0.22,1,0.36,1) 0.2s forwards;
+}
+.hero-eyebrow {
+  font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  font-size:0.63rem; color:rgba(255,255,255,0.38);
+  letter-spacing:5px; text-transform:uppercase;
+  margin-bottom:26px;
+}
+.hero-title {
+  font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:clamp(72px,14vw,160px);
+  line-height:0.88; letter-spacing:-1px;
+}
+.hero-title .line1 { color:var(--white); display:block; opacity:0.95; }
+.hero-title .line2 {
+  display:block;
+  color: #FFD400;
+  filter:drop-shadow(0 0 22px rgba(255,212,0,0.30));
+}
+.hero-sub {
+  font-size:clamp(0.82rem,1.5vw,0.95rem);
+  color:rgba(255,255,255,0.35);
+  margin-top:18px;
+  font-family:'Noto Sans KR',sans-serif; font-weight:500; letter-spacing:2px;
+}
+
+/* trust chips */
+.hero-trust {
+  display:flex; flex-wrap:wrap; gap:9px;
+  justify-content:center; margin-top:32px;
+}
+.trust-chip {
+  display:flex; align-items:center; gap:7px;
+  background:rgba(255,255,255,0.055);
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:100px; padding:8px 17px;
+  font-size:0.8rem; color:rgba(255,255,255,0.62);
+  font-weight:500; backdrop-filter:blur(8px);
+  transition:background 0.2s, border-color 0.2s, color 0.2s;
+}
+.trust-chip:hover { background:rgba(255,255,255,0.09); border-color:rgba(255,212,0,0.3); color:var(--white); }
+.chip-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.chip-dot.yellow { background:var(--yellow); box-shadow:0 0 5px rgba(255,230,0,0.5); }
+.chip-dot.pink   { background:var(--pink);   box-shadow:0 0 5px rgba(255,60,172,0.5); }
+.chip-dot.cyan   { background:var(--cyan);   box-shadow:0 0 5px rgba(0,245,255,0.5); }
+.chip-dot.purple { background:var(--purple); box-shadow:0 0 5px rgba(192,132,252,0.5); }
+
+/* CTA */
+.hero-cta { display:flex; gap:13px; justify-content:center; flex-wrap:wrap; margin-top:40px; }
+.btn-primary {
+  display:inline-flex; align-items:center; gap:7px;
+  background: #FFD400;
+  color:#0A0A0A; font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:1.1rem; letter-spacing:3px;
+  padding:15px 38px; border:none;
+  cursor:pointer; text-decoration:none;
+  border-radius: 14px;
+  box-shadow:0 4px 20px rgba(255,212,0,0.28), 0 1px 0 rgba(255,255,255,0.22) inset;
+  transition:transform 0.17s ease, box-shadow 0.17s ease;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,212,0,0.42); }
+.btn-primary:active { transform:translateY(0); }
+.btn-secondary {
+  display:inline-flex; align-items:center; gap:7px;
+  background:rgba(255,255,255,0.065);
+  color:rgba(255,255,255,0.80);
+  font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:1.1rem; letter-spacing:3px;
+  padding:14px 34px;
+  border:1px solid rgba(255,255,255,0.16);
+  border-radius:100px; cursor:pointer; text-decoration:none;
+  backdrop-filter:blur(8px);
+  transition:background 0.18s, border-color 0.18s, transform 0.18s;
+}
+.btn-secondary:hover { background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.30); transform:translateY(-2px); color:var(--white); }
+
+/* ── BRAND INTRO (franchise) ── */
+.brand-section {
+  background:
+    radial-gradient(ellipse 55% 50% at 10% 60%, rgba(255,212,0,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 45% at 90% 20%, rgba(255,79,163,0.04) 0%, transparent 55%),
+    #0A0A0A;
+}
+.brand-section .section-label { color:rgba(255,212,0,0.60); }
+.brand-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:14px; margin-top:44px;
+}
+.brand-card {
+  padding:34px 26px; position:relative; overflow:hidden;
+  transition:box-shadow 0.25s, border-color 0.25s;
+  color:var(--white);
+}
+.brand-card:hover { border-color:rgba(255,255,255,0.20); box-shadow:0 20px 56px rgba(0,0,0,0.38); }
+.brand-card:nth-child(1)::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(255,212,0,0.08) 0%,transparent 70%);border-radius:inherit;pointer-events:none;}
+.brand-card:nth-child(2)::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(255,79,163,0.07) 0%,transparent 70%);border-radius:inherit;pointer-events:none;}
+.brand-card:nth-child(3)::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(255,212,0,0.06) 0%,transparent 70%);border-radius:inherit;pointer-events:none;}
+.brand-card:nth-child(4)::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(255,79,163,0.06) 0%,transparent 70%);border-radius:inherit;pointer-events:none;}
+.brand-card-num {
+  font-family:'Montserrat',sans-serif; font-weight:900; font-size:4rem;
+  opacity:0.07; position:absolute; top:8px; right:18px;
+  line-height:1; color:var(--white); pointer-events:none;
+}
+.brand-card-icon { font-size:1.8rem; margin-bottom:14px; display:block; position:relative; z-index:1; }
+.brand-card-title {
+  font-family:'Montserrat','Noto Sans KR',sans-serif;
+  font-weight:800;
+  font-size:1.15rem; letter-spacing:-0.02em;
+  line-height:1.25; margin-bottom:8px;
+  color:var(--white); position:relative; z-index:1;
+}
+.brand-card-desc {
+  font-size:0.95rem; line-height:1.7;
+  color:var(--mid); position:relative; z-index:1;
+}
+
+/* ── WHY STICKON ── */
+.why-section {
+  background:
+    radial-gradient(ellipse 50% 55% at 80% 30%, rgba(255,212,0,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 15% 70%, rgba(255,79,163,0.04) 0%, transparent 55%),
+    #0A0A0A;
+}
+/* 선언 카드 그리드 */
+.why-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:14px;
+}
+.why-card {
+  padding:36px 30px; position:relative; overflow:hidden;
+  transition:box-shadow 0.25s, border-color 0.25s;
+}
+.why-card:hover { border-color:rgba(255,212,0,0.22); box-shadow:0 20px 56px rgba(0,0,0,0.38); }
+.why-card-icon { font-size:2rem; margin-bottom:18px; display:block; }
+.why-declaration {
+  font-family:'Montserrat','Noto Sans KR',sans-serif;
+  font-weight: 900;
+  font-size:clamp(1.3rem,2.2vw,1.65rem);
+  line-height:1.25; color:var(--white);
+  margin-bottom:12px; letter-spacing:-0.025em;
+}
+.why-sub {
+  font-size:0.95rem; color:var(--muted);
+  line-height:1.65;
+}
+
+/* ── ICON ROW ── */
+.icon-row-section {
+  background:
+    radial-gradient(ellipse 55% 55% at 50% 50%, rgba(255,212,0,0.05) 0%, transparent 60%),
+    #0A0A0A;
+  padding:80px 24px;
+}
+.icon-row {
+  display:flex; flex-wrap:wrap; gap:12px;
+  justify-content:center; max-width:900px; margin:0 auto;
+}
+.icon-item {
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding:28px 24px; min-width:130px;
+  transition:border-color 0.2s, box-shadow 0.2s;
+  cursor:default;
+}
+.icon-item:hover { border-color:rgba(255,212,0,0.28); box-shadow:0 16px 40px rgba(0,0,0,0.35); }
+.icon-item .ico { font-size:2.2rem; line-height:1; }
+.icon-item .lbl {
+  font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:0.85rem; letter-spacing:2.5px;
+  color:rgba(255,255,255,0.55);
+  text-align:center; white-space:nowrap;
+}
+
+/* ── STATS ── */
+.stats-section {
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255,212,0,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 10% 20%, rgba(255,79,163,0.03) 0%, transparent 50%),
+    #0A0A0A;
+  padding:96px 24px;
+}
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:14px; max-width:1100px; margin:0 auto;
+}
+.stat-item {
+  padding:40px 24px; text-align:center;
+  transition:box-shadow 0.25s, border-color 0.25s;
+}
+.stat-item:hover { border-color:rgba(255,212,0,0.22); box-shadow:0 20px 56px rgba(0,0,0,0.38); }
+.stat-num {
+  font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:clamp(2.8rem,6vw,4.5rem);
+  color:var(--white); line-height:1; display:block;
+}
+.stat-label {
+  font-size:0.95rem; color:var(--mid);
+  margin-top:10px; font-weight:600; letter-spacing:-0.01em;
+}
+.stat-sub {
+  font-size:0.85rem; color:var(--muted);
+  margin-top:5px; line-height:1.5;
+}
+.stats-badge {
+  max-width:1100px; margin:36px auto 0;
+  display:flex; flex-wrap:wrap; gap:9px; justify-content:center;
+}
+.badge {
+  background:var(--glass-bg); border:1px solid var(--glass-bd);
+  border-radius:100px; backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  color:var(--mid); font-size:0.75rem; font-weight:500;
+  padding:7px 16px; letter-spacing:0.2px;
+  transition:border-color 0.2s, color 0.2s;
+}
+.badge:hover { border-color:rgba(255,212,0,0.28); color:var(--white); }
+
+/* ── GALLERY ── */
+.gallery-section {
+  background:
+    radial-gradient(ellipse 45% 50% at 20% 40%, rgba(0,245,255,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 45% at 80% 60%, rgba(192,132,252,0.06) 0%, transparent 55%),
+    #0A0A0A;
+}
+
+/* ── CAROUSEL ── */
+.carousel-wrap {
+  position:relative; overflow:hidden;
+  border-radius:20px; user-select:none;
+}
+.carousel-track {
+  display:flex; gap:14px;
+  transition:transform 0.5s cubic-bezier(0.22,1,0.36,1);
+  will-change:transform;
+}
+.carousel-card {
+  flex:0 0 calc(33.333% - 10px); height:auto;
+  border-radius:18px; overflow:hidden; position:relative;
+  background:rgba(255,255,255,0.045);
+  border:1px solid rgba(255,255,255,0.09);
+  transition:box-shadow 0.3s; flex-shrink:0;
+}
+.carousel-card:hover { box-shadow:0 24px 56px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.09); }
+.carousel-card img { width:100%;height:auto;object-fit:contain;display:block;transition:transform 0.4s ease; }
+.carousel-card:hover img { transform:scale(1.04); }
+.carousel-card.no-img img { display:none; }
+.carousel-card.no-img .carousel-fallback { display:flex; }
+.carousel-fallback {
+  display:none; width:100%; height:100%;
+  flex-direction:column; align-items:center; justify-content:center; gap:12px;
+  background:linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015));
+}
+.carousel-fallback span {
+  font-family:'Montserrat',sans-serif; font-weight:900; font-size:0.85rem;
+  letter-spacing:3px; color:rgba(255,255,255,0.18);
+}
+.carousel-tag {
+  position:absolute; bottom:14px; left:14px;
+  background:rgba(255,255,255,0.09);
+  border:1px solid rgba(255,255,255,0.14);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border-radius:100px; color:var(--white);
+  font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  font-size:0.6rem; padding:4px 13px; letter-spacing:1px;
+}
+.carousel-btn {
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:42px; height:42px; border-radius:50%;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.14);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  color:var(--white); font-size:1rem;
+  cursor:pointer; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s, transform 0.2s;
+}
+.carousel-btn:hover { background:rgba(255,255,255,0.16); transform:translateY(-50%) scale(1.08); }
+.carousel-btn.prev { left:10px; }
+.carousel-btn.next { right:10px; }
+.carousel-dots { display:flex; justify-content:center; gap:7px; margin-top:22px; }
+.carousel-dot {
+  width:5px; height:5px; border-radius:100px;
+  background:rgba(255,255,255,0.18); border:none;
+  cursor:pointer; transition:background 0.3s, width 0.3s; padding:0;
+}
+.carousel-dot.active { background:var(--yellow); width:22px; box-shadow:0 0 7px rgba(255,212,0,0.5); }
+
+@media(max-width:768px){ .carousel-card{flex:0 0 calc(80% - 7px);height:auto;} }
+@media(max-width:480px){ .carousel-card{flex:0 0 calc(90% - 7px);height:auto;} }
+
+/* ── PROCESS ── */
+.process-section {
+  background:
+    radial-gradient(ellipse 50% 55% at 70% 40%, rgba(255,212,0,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 20% 60%, rgba(255,79,163,0.04) 0%, transparent 55%),
+    #0A0A0A;
+}
+.process-section .section-label { color:rgba(255,212,0,0.55); }
+.process-steps { display:flex; flex-direction:column; gap:2px; }
+.process-step {
+  display:grid; grid-template-columns:66px 1fr;
+  gap:24px; align-items:center;
+  padding:28px 32px; border-radius:var(--r);
+  background:var(--glass-bg); border:1px solid var(--glass-bd);
+  backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  box-shadow:var(--glass-sh);
+  transition:border-color 0.25s, box-shadow 0.25s;
+  margin-bottom:10px;
+}
+.process-step:hover { border-color:rgba(255,212,0,0.22); box-shadow:0 16px 44px rgba(0,0,0,0.32); }
+.process-step:last-child { margin-bottom:0; }
+.step-num {
+  font-family:'Montserrat',sans-serif;
+  font-weight:900;
+  font-size:2.6rem; color:rgba(255,212,0,0.50); line-height:1;
+}
+.step-content h3 {
+  font-family:'Montserrat','Noto Sans KR',sans-serif;
+  font-weight:800;
+  font-size:1.15rem; line-height:1.25;
+  letter-spacing:-0.02em;
+  margin-bottom:4px; color:var(--white);
+}
+.step-content p { font-size:0.95rem; line-height:1.65; color:var(--muted); }
+
+/* ── FORM ── */
+.form-section {
+  background:
+    radial-gradient(ellipse 55% 50% at 30% 50%, rgba(255,212,0,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 45% at 75% 30%, rgba(255,79,163,0.04) 0%, transparent 55%),
+    #0A0A0A;
+  position:relative; overflow:hidden;
+}
+.form-section::before {
+  content:"STICK'ON";
+  font-family:'Montserrat',sans-serif; font-weight:900; font-size:18vw;
+  position:absolute; bottom:-3vw; right:-2vw;
+  color:rgba(255,255,255,0.013); pointer-events:none;
+  white-space:nowrap; letter-spacing:-2px;
+}
+.form-inner { max-width:580px; margin:0 auto; position:relative; z-index:2; }
+.form-box {
+  background:rgba(255,255,255,0.048);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:26px;
+  box-shadow:0 20px 56px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.07);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  padding:48px 40px; color:var(--white); position:relative; overflow:hidden;
+}
+.form-box::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);
+  pointer-events:none;
+}
+.form-row { margin-bottom:18px; }
+.form-row label {
+  display:block; font-family:'Noto Sans KR',sans-serif; font-weight:500;
+  font-size:0.6rem; letter-spacing:3px;
+  text-transform:uppercase; color:rgba(255,255,255,0.40);
+  margin-bottom:9px;
+}
+.form-row input[type="checkbox"] {
+  all:revert; width:17px; height:17px;
+  accent-color:var(--yellow); cursor:pointer; flex-shrink:0;
+}
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width:100%;
+  background:rgba(255,255,255,0.055);
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:11px; padding:14px 17px;
+  font-family:'Noto Sans KR',sans-serif;
+  font-size:0.95rem; color:var(--white); outline:none;
+  transition:border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  appearance:none; -webkit-appearance:none;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.form-row input::placeholder,
+.form-row textarea::placeholder { color:rgba(255,255,255,0.22); font-size:0.9rem; }
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus {
+  border-color:rgba(255,212,0,0.40);
+  background:rgba(255,255,255,0.08);
+  box-shadow:0 0 0 3px rgba(255,212,0,0.08);
+}
+.form-row textarea { resize:none; height:84px; line-height:1.6; }
+.form-row select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='rgba(255,255,255,0.35)'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center; cursor:pointer;
+}
+.form-row select option { background:#1a1a2e; color:var(--white); }
+.form-row-double { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.btn-submit {
+  width:100%;
+  background: #FFD400;
+  color:#0A0A0A; font-family:'Montserrat',sans-serif; font-weight:900;
+  font-size:1.15rem; letter-spacing:4px;
+  padding:17px; border:none; border-radius:100px;
+  cursor:pointer; margin-top:18px;
+  box-shadow:0 4px 18px rgba(255,212,0,0.20);
+  transition:transform 0.17s ease, box-shadow 0.17s ease;
+  font-weight:900;
+}
+.btn-submit:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(255,212,0,0.28); }
+.btn-submit:active { transform:translateY(0); }
+.btn-submit:disabled { opacity:0.42; cursor:not-allowed; transform:none; }
+.form-notice {
+  font-size:0.72rem; color:var(--muted);
+  text-align:center; margin-top:14px;
+}
+.success-msg { display:none; text-align:center; padding:60px 36px; }
+.success-msg .big {
+  font-family:'Montserrat',sans-serif; font-weight:900; font-size:3rem;
+  color:#00FF88; margin-bottom:14px;
+}
+.success-msg p { font-size:0.9rem; color:var(--mid); line-height:1.8; }
+
+/* ── FOOTER ── */
+footer {
+  background:#050505;
+  border-top:1px solid rgba(255,255,255,0.05);
+  padding:44px 24px; text-align:center;
+}
+footer .logo {
+  font-family:'Montserrat',sans-serif; font-weight:900; font-size:1.9rem; letter-spacing:6px;
+  background:linear-gradient(120deg,#FFD400,#FFD400);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+footer p { font-size:0.7rem; color:rgba(255,255,255,0.20); margin-top:10px; }
+
+
+/* ══ BRAND PAGE REDESIGN — IMAGE-LED ══ */
+
+/* HERO */
+.bp-hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  overflow: hidden;
+  background: #0A0A0A;
+}
+.bp-hero-img {
+  position: relative;
+  overflow: hidden;
+}
+.bp-hero-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: saturate(1.05) contrast(1.03);
+  transition: transform 8s ease;
+}
+.bp-hero-img:hover img { transform: scale(1.03); }
+.bp-hero-img-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, rgba(8,8,15,0.55) 0%, transparent 60%);
+}
+.bp-hero-text {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 100px 64px 80px;
+  position: relative; z-index: 2;
+  order: -1;
+}
+.bp-eyebrow {
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.62rem; letter-spacing: 6px;
+  color: rgba(255,212,0,0.7);
+  text-transform: uppercase; margin-bottom: 22px;
+}
+.bp-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: clamp(72px, 12vw, 140px);
+  line-height: 0.88; color: var(--white);
+  margin-bottom: 28px; letter-spacing: -1px;
+}
+.bp-title .t-white { color: var(--white); display: block; opacity: 0.95; }
+.bp-title span {
+  display: block;
+  color: #FFD400;
+  filter: drop-shadow(0 0 22px rgba(255,212,0,0.30));
+}
+.bp-declaration {
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  letter-spacing: -0.03em; line-height: 1.6;
+  color: rgba(255,255,255,0.48);
+  margin-bottom: 40px;
+}
+.bp-hero-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.bp-chip {
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.58rem; letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.45);
+  padding: 6px 14px; border-radius: 100px;
+}
+
+/* ── FULL-WIDTH STORE PHOTO ── */
+.bp-fullphoto {
+  width: 100%;
+  height: 60vh; min-height: 400px;
+  overflow: hidden; position: relative;
+}
+.bp-fullphoto img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: saturate(1.05);
+  transition: transform 6s ease;
+}
+.bp-fullphoto:hover img { transform: scale(1.04); }
+.bp-fullphoto-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 60px 48px 32px;
+  background: linear-gradient(to top, rgba(8,8,15,0.85) 0%, transparent 100%);
+  display: flex; justify-content: space-between; align-items: flex-end;
+}
+.bp-fullphoto-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: clamp(28px, 4vw, 48px);
+  color: var(--white); line-height: 1;
+  letter-spacing: 1px;
+}
+.bp-fullphoto-sub {
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.6rem; letter-spacing: 3px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+}
+
+/* ── 2-COL PHOTO SPLIT ── */
+.bp-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 500px;
+}
+.bp-split-img {
+  overflow: hidden; position: relative;
+}
+.bp-split-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease, filter 0.5s ease;
+  filter: saturate(0.9);
+}
+.bp-split-img:hover img {
+  transform: scale(1.05);
+  filter: saturate(1.1);
+}
+.bp-split-text {
+  background: #0F0F0F;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 64px 56px;
+  position: relative; overflow: hidden;
+}
+.bp-split-text::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,212,0,0.15), transparent);
+}
+.bp-split-label {
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.58rem; letter-spacing: 4px;
+  color: rgba(255,212,0,0.65); text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.bp-split-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: clamp(32px, 4.5vw, 54px);
+  color: var(--white); line-height: 1; margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+.bp-split-desc {
+  font-size: 0.95rem; color: var(--muted);
+  line-height: 1.78; margin-bottom: 32px;
+  max-width: 380px;
+}
+.bp-split-tag {
+  display: inline-block;
+  background: rgba(255,212,0,0.08);
+  border: 1px solid rgba(255,212,0,0.25);
+  border-radius: 100px;
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.58rem; letter-spacing: 2px;
+  color: rgba(255,212,0,0.75); padding: 5px 14px;
+  text-transform: uppercase;
+}
+
+/* ── MASONRY PHOTO GRID ── */
+.bp-grid-section {
+  background: #0A0A0A;
+  padding: 80px 40px;
+}
+.bp-grid-inner {
+  max-width: 1200px; margin: 0 auto;
+}
+.bp-grid-header {
+  display: flex; justify-content: space-between;
+  align-items: flex-end; margin-bottom: 32px;
+}
+.bp-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: auto;
+  gap: 10px;
+}
+.bp-photo-cell {
+  overflow: hidden; position: relative;
+  background: #111;
+  cursor: pointer;
+}
+.bp-photo-cell img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease, filter 0.5s ease;
+  filter: saturate(0.88) brightness(0.95);
+}
+.bp-photo-cell:hover img {
+  transform: scale(1.07);
+  filter: saturate(1.1) brightness(1.02);
+}
+.bp-photo-cell-overlay {
+  position: absolute; inset: 0;
+  background: rgba(8,8,15,0);
+  transition: background 0.3s;
+  display: flex; align-items: flex-end;
+}
+.bp-photo-cell:hover .bp-photo-cell-overlay {
+  background: rgba(8,8,15,0.3);
+}
+.bp-photo-cell-label {
+  padding: 16px; opacity: 0;
+  transition: opacity 0.3s;
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.55rem; letter-spacing: 2px;
+  color: rgba(255,255,255,0.7); text-transform: uppercase;
+}
+.bp-photo-cell:hover .bp-photo-cell-label { opacity: 1; }
+
+/* Grid layout assignments */
+.bp-photo-cell:nth-child(1) { grid-column: 1/6;  grid-row: 1; aspect-ratio: 4/5; }
+.bp-photo-cell:nth-child(2) { grid-column: 6/9;  grid-row: 1; aspect-ratio: 3/5; }
+.bp-photo-cell:nth-child(3) { grid-column: 9/13; grid-row: 1; aspect-ratio: 4/5; }
+.bp-photo-cell:nth-child(4) { grid-column: 1/5;  grid-row: 2; aspect-ratio: 4/3; }
+.bp-photo-cell:nth-child(5) { grid-column: 5/9;  grid-row: 2; aspect-ratio: 1;   }
+.bp-photo-cell:nth-child(6) { grid-column: 9/13; grid-row: 2; aspect-ratio: 4/3; }
+
+/* ── GOODS SHOWCASE — horizontal scroll strip ── */
+.bp-goods-strip {
+  background: #0A0A0A;
+  padding: 72px 0;
+  overflow: hidden;
+}
+.bp-goods-strip-inner {
+  max-width: 1200px; margin: 0 auto;
+  padding: 0 40px;
+}
+.bp-goods-strip-header {
+  margin-bottom: 32px; padding: 0;
+}
+.bp-goods-row {
+  display: flex; gap: 16px;
+  overflow-x: auto; padding-bottom: 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.bp-goods-row::-webkit-scrollbar { display: none; }
+.bp-goods-item {
+  flex: 0 0 280px; height: 360px;
+  overflow: hidden; position: relative;
+  scroll-snap-align: start;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.bp-goods-item img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  transition: transform 0.5s ease, filter 0.5s ease;
+  filter: saturate(0.9);
+}
+.bp-goods-item:hover img {
+  transform: scale(1.06);
+  filter: saturate(1.1);
+}
+.bp-goods-item-cap {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(8,8,15,0.9) 0%, transparent 70%);
+  padding: 36px 18px 16px;
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.58rem; letter-spacing: 2px;
+  color: rgba(255,255,255,0.5); text-transform: uppercase;
+}
+
+/* ── PHILOSOPHY (condensed) ── */
+.bp-phil-mini {
+  background: #0A0A0A;
+  padding: 80px 40px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.bp-phil-mini-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 3fr;
+  gap: 64px; align-items: start;
+}
+.bp-phil-mini-left h2 {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: clamp(36px, 5vw, 60px);
+  color: var(--white); line-height: 1;
+}
+.bp-phil-mini-right {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: rgba(255,255,255,0.04);
+}
+.bp-phil-mini-card {
+  background: #0A0A0A;
+  padding: 32px 28px;
+  transition: background 0.25s;
+}
+.bp-phil-mini-card:hover { background: rgba(255,255,255,0.025); }
+.bp-phil-mini-num {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: 2.5rem; color: rgba(255,255,255,0.04);
+  line-height: 1; margin-bottom: 12px;
+}
+.bp-phil-mini-title {
+  font-size: 1rem; font-weight: 700;
+  color: var(--white); margin-bottom: 8px; line-height: 1.3;
+}
+.bp-phil-mini-desc {
+  font-size: 0.82rem; color: var(--muted); line-height: 1.7;
+}
+
+/* ── BRAND CTA ── */
+.bp-cta {
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 50%, rgba(255,212,0,0.07) 0%, transparent 60%),
+    #0A0A0A;
+  padding: 112px 24px; text-align: center;
+}
+.bp-cta h2 {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: clamp(38px, 7.5vw, 76px);
+  color: var(--white); margin-bottom: 20px; line-height: 1;
+}
+.bp-cta p { font-size: 0.95rem; color: var(--muted); margin-bottom: 40px; line-height: 1.8; }
+.bp-hero-orb { display: none; } /* hide old orbs */
+
+/* responsive */
+@media(max-width:900px) {
+  .bp-hero { grid-template-columns: 1fr; }
+  .bp-hero-img { height: 55vw; }
+  .bp-hero-text { order: 0; padding: 72px 24px 48px; }
+  .bp-split { grid-template-columns: 1fr; }
+  .bp-split-img { height: 60vw; }
+  .bp-split-text { padding: 48px 24px; }
+  .bp-photo-grid { grid-template-columns: 1fr 1fr; }
+  .bp-photo-cell:nth-child(1) { grid-column: 1/2; grid-row: 1; }
+  .bp-photo-cell:nth-child(2) { grid-column: 2/3; grid-row: 1; }
+  .bp-photo-cell:nth-child(3) { grid-column: 1/2; grid-row: 2; }
+  .bp-photo-cell:nth-child(4) { grid-column: 2/3; grid-row: 2; }
+  .bp-photo-cell:nth-child(5) { grid-column: 1/2; grid-row: 3; }
+  .bp-photo-cell:nth-child(6) { grid-column: 2/3; grid-row: 3; }
+  .bp-photo-cell { aspect-ratio: 1 !important; }
+  .bp-phil-mini-inner { grid-template-columns: 1fr; gap: 32px; }
+  .bp-phil-mini-right { grid-template-columns: 1fr; }
+  .bp-grid-section { padding: 60px 16px; }
+  .bp-goods-strip-inner { padding: 0 16px; }
+  .bp-goods-item { flex: 0 0 200px; height: 260px; }
+}
+
+/* ── INSTAGRAM REELS ── */
+.bp-reels {
+  background: #0A0A0A;
+  padding: 80px 40px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.bp-reels-inner { max-width: 1200px; margin: 0 auto; }
+.bp-reels-header { margin-bottom: 40px; }
+.bp-reels-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.bp-reel-card {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.bp-reel-label {
+  font-family: 'Noto Sans KR', sans-serif; font-weight:500;
+  font-size: 0.6rem; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,212,0,0.60);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.bp-reel-embed {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+  position: relative;
+  aspect-ratio: 9/16;
+}
+.bp-reel-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 12px;
+}
+/* remove dark placeholder since iframe loads directly */
+
+@media(max-width: 900px) {
+  .bp-reels { padding: 60px 16px; }
+  .bp-reels-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:680px){
+  section { padding:80px 16px; }
+  .bp-section { padding:80px 16px; }
+  .brand-grid { grid-template-columns:1fr; gap:10px; }
+  .why-grid { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .process-step { grid-template-columns:52px 1fr; padding:22px 18px; }
+  .form-box { padding:36px 20px; }
+  .form-row-double { grid-template-columns:1fr; gap:10px; }
+  .hero-glass { padding:44px 22px 38px; border-radius:20px; }
+  .hero-trust { gap:7px; }
+  .trust-chip { font-size:0.75rem; padding:7px 13px; }
+  .hero-cta { flex-direction:column; align-items:center; gap:10px; }
+  .btn-primary, .btn-secondary { width:100%; justify-content:center; font-size:1rem; }
+  .bp-philosophy-grid { grid-template-columns:1fr; }
+  .bp-diff-list { grid-template-columns:1fr; }
+  .bp-target-grid { grid-template-columns:1fr; }
+  .bp-model-grid { grid-template-columns:1fr; }
+  .icon-row { gap:9px; }
+  .icon-item { min-width:110px; padding:22px 18px; }
+  .page-nav-btn { padding:14px 18px; font-size:0.85rem; letter-spacing:2px; }
+}
+@media(max-width:400px){
+  .stats-grid { grid-template-columns:1fr; }
+}
+
+/* ── STICKER MOCKUP EFFECTS ── */
+.carousel-card {
+  border-radius: 12px !important;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,.25),
+    0 8px 28px rgba(0,0,0,.2),
+    0 0 0 4px rgba(255,255,255,.06) !important;
+  transition: transform .35s ease, box-shadow .35s ease, filter .35s ease !important;
+  overflow: hidden;
+  position: relative;
+}
+.carousel-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 50%);
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 12px;
+}
+.carousel-card:hover {
+  transform: translateY(-10px) rotate(1deg) scale(1.02) !important;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,.3),
+    0 20px 60px rgba(0,0,0,.25),
+    0 0 0 4px rgba(255,212,0,.20) !important;
+  filter: saturate(1.1) brightness(1.05) !important;
+}
+.carousel-card img {
+  border-radius: 10px !important;
+  filter: saturate(.92) contrast(1.04);
+  transition: filter .35s ease, transform .35s ease !important;
+}
+.carousel-card:hover img {
+  filter: saturate(1.12) contrast(1.06) !important;
+  transform: scale(1.04) !important;
+}
+/* sticker tag badge */
+.carousel-tag {
+  background: rgba(255,230,0,.18) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255,230,0,.25) !important;
+  color: rgba(255,230,0,.9) !important;
+  border-radius: 4px !important;
+  letter-spacing: 1.5px !important;
+  font-size: .6rem !important;
+}
+
+/* ── STICKON BRAND MOTIFS ── */
+/* Sticker outline on photo cells */
+.bp-photo-cell::after {
+  content: '';
+  position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.06);
+  pointer-events: none; z-index: 2;
+}
+/* Sticker-style CTA button */
+.btn-primary {
+  position: relative;
+  border-radius: 14px !important;
+  border-bottom: 3px solid rgba(0,0,0,0.18) !important;
+  border-right: 2px solid rgba(0,0,0,0.10) !important;
+}
+/* sticker shine top-left */
+.btn-primary::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.18), transparent);
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+}
+/* sparkle icon */
+.btn-primary::after {
+  content: '✦';
+  position: absolute; top: -8px; right: -8px;
+  font-size: 0.65rem; color: #FFD400;
+  background: #0A0A0A;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 18px; text-align: center;
+  border: 1px solid rgba(255,212,0,0.3);
+  pointer-events: none;
+}
+/* Sparkle decoration */
+.bp-eyebrow::before {
+  content: '✦ ';
+  color: var(--yellow);
+  font-size: 0.7em;
+}
+/* Yellow accent bar on section labels */
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 14px; height: 2px;
+  background: var(--yellow);
+  vertical-align: middle;
+  margin-right: 8px;
+  border-radius: 2px;
+}
+/* Sticker-style card corners */
+.g-card, .brand-card, .why-card, .process-step {
+  border-radius: 12px !important;
+}
+/* Yellow highlight on nav active */
+.page-nav-btn.active { color: var(--yellow) !important; }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track" id="marquee">
+    <span>STICK'ON</span><span class="dot">·</span>
+    <span>차세대 포토부스는 스티커</span><span class="dot">·</span>
+    <span>Franchise Open</span><span class="dot">·</span>
+    <span>IFS 2026</span><span class="dot">·</span>
+    <span>붙이고 남는 경험</span><span class="dot">·</span>
+    <span>Sticker Photo</span><span class="dot">·</span>
+    <span>Keyring Goods</span><span class="dot">·</span>
+    <span>STICK'ON</span><span class="dot">·</span>
+    <span>차세대 포토부스는 스티커</span><span class="dot">·</span>
+    <span>Franchise Open</span><span class="dot">·</span>
+    <span>IFS 2026</span><span class="dot">·</span>
+    <span>붙이고 남는 경험</span><span class="dot">·</span>
+    <span>Sticker Photo</span><span class="dot">·</span>
+    <span>Keyring Goods</span><span class="dot">·</span>
+  </div>
+</div>
+
+<!-- PAGE NAV -->
+<nav class="page-nav">
+  <button class="page-nav-btn active" onclick="switchPage('brand')">브랜드 소개</button>
+  <button class="page-nav-btn" onclick="switchPage('franchise')">가맹 안내</button>
+</nav>
+
+
+<!-- ══════════════════════════════════
+     PAGE 1 : 브랜드 소개
+══════════════════════════════════ -->
+<div class="page active" id="page-brand">
+
+  <!-- HERO: text left + store photo right -->
+  <section class="bp-hero">
+    <div class="bp-hero-text">
+      <p class="bp-eyebrow">찍고 끝나는 포토가 아니라, 붙이고 남는 경험</p>
+      <h1 class="bp-title"><span class="t-white">STICK'</span><span>ON</span></h1>
+      <p class="bp-declaration">차세대 포토부스는<br>스티커</p>
+      <div class="bp-hero-chips">
+        <span class="bp-chip">스티커 사진</span>
+        <span class="bp-chip">ID 카드 굿즈</span>
+        <span class="bp-chip">🇰🇷 · 🇲🇾</span>
+        <span class="bp-chip">시즌 콜라보</span>
+      </div>
+    </div>
+    <div class="bp-hero-img">
+      <img src="images/store_front_my.jpg" alt="KIPIC 말레이시아 매장">
+      <div class="bp-hero-img-overlay"></div>
+    </div>
+  </section>
+
+  <!-- FULL-WIDTH: 한국 매장 외관 -->
+  <div class="bp-fullphoto reveal">
+    <img src="images/store_front_kr.jpg" alt="KIPIC 한국 매장">
+    <div class="bp-fullphoto-label">
+      <div>
+        <div class="bp-fullphoto-sub">Brand Space</div>
+        <div class="bp-fullphoto-title">STICK'ON</div>
+      </div>
+      <div class="bp-fullphoto-sub" style="text-align:right;">Beyond the Photo Booth<br>서울 · 쿠알라룸푸르</div>
+    </div>
+  </div>
+
+  <!-- SPLIT: 굿즈 선반 + 텍스트 -->
+  <div class="bp-split">
+    <div class="bp-split-img reveal">
+      <img src="images/store_goods.jpg" alt="굿즈 선반">
+    </div>
+    <div class="bp-split-text reveal">
+      <p class="bp-split-label">In-Store Experience</p>
+      <h2 class="bp-split-title">찍고,<br>꾸미고,<br>간직한다</h2>
+      <p class="bp-split-desc">
+        스티커 사진과 ID 카드 굿즈.<br>
+        사진이 오브제가 되고,<br>
+        오브제가 취향이 돼요.
+      </p>
+      <span class="bp-split-tag">ID Card · Keyring · Sticker</span>
+    </div>
+  </div>
+
+  <!-- SPLIT REVERSE: 텍스트 + 카운터 -->
+  <div class="bp-split" style="direction:rtl;">
+    <div class="bp-split-img reveal" style="direction:ltr;">
+      <img src="images/counter.jpg" alt="카운터">
+    </div>
+    <div class="bp-split-text reveal" style="direction:ltr;background:#0b0b16;">
+      <p class="bp-split-label">Retail Operation</p>
+      <h2 class="bp-split-title">공간이<br>브랜드예요</h2>
+      <p class="bp-split-desc">
+        STICK'ON 매장은 단순한 포토부스가 아니에요.<br>
+        굿즈, 사이니지, 공간 디자인까지<br>
+        브랜드 경험을 일관되게 설계해드려요.
+      </p>
+      <span class="bp-split-tag">Brand Space Design</span>
+    </div>
+  </div>
+
+  <!-- PHOTO GRID: 6장 매거진 그리드 -->
+  <section class="bp-grid-section">
+    <div class="bp-grid-inner">
+      <div class="bp-grid-header reveal">
+        <div>
+          <p class="section-label" style="margin-bottom:6px;">Inside STICK'ON</p>
+          <h2 class="section-title" style="font-size:clamp(24px,3.5vw,40px);margin-bottom:0;">공간을 들여다보다</h2>
+        </div>
+        <p style="font-family:'Noto Sans KR',sans-serif; font-weight:500;font-size:.58rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">KL · Seoul</p>
+      </div>
+      <div class="bp-photo-grid">
+        <div class="bp-photo-cell reveal">
+          <img src="images/booth_inside.jpg" alt="포토부스 내부">
+          <div class="bp-photo-cell-overlay">
+            <span class="bp-photo-cell-label">Photo Booth</span>
+          </div>
+        </div>
+        <div class="bp-photo-cell reveal">
+          <img src="images/goods_keyring.jpg" alt="키링 굿즈">
+          <div class="bp-photo-cell-overlay">
+            <span class="bp-photo-cell-label">Keyring Goods</span>
+          </div>
+        </div>
+        <div class="bp-photo-cell reveal">
+          <img src="images/store_goods.jpg" alt="굿즈 선반">
+          <div class="bp-photo-cell-overlay">
+            <span class="bp-photo-cell-label">ID Card Zone</span>
+          </div>
+        </div>
+        <div class="bp-photo-cell reveal">
+          <img src="images/counter.jpg" alt="카운터">
+          <div class="bp-photo-cell-overlay">
+            <span class="bp-photo-cell-label">Reception</span>
+          </div>
+        </div>
+        <div class="bp-photo-cell reveal">
+          <img src="images/goods_stand.jpg" alt="굿즈 스탠드">
+          <div class="bp-photo-cell-overlay">
+            <span class="bp-photo-cell-label">ID Stand</span>
+          </div>
+        </div>
+        <div class="bp-photo-cell reveal">
+          <img src="images/machine.jpg" alt="포토부스 기기">
+          <div class="bp-photo-cell-overlay">
+            <span class="bp-photo-cell-label">Shadow Free Booth</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GOODS HORIZONTAL SCROLL -->
+  <section class="bp-goods-strip">
+    <div class="bp-goods-strip-inner">
+      <div class="bp-goods-strip-header reveal">
+        <p class="section-label" style="margin-bottom:6px;">Goods & Details</p>
+        <h2 class="section-title" style="font-size:clamp(22px,3vw,38px);margin-bottom:0;">클로즈업</h2>
+      </div>
+      <div class="bp-goods-row">
+        <div class="bp-goods-item">
+          <img src="images/goods_stand.jpg" alt="굿즈 스탠드">
+          <div class="bp-goods-item-cap">ID Card Stand</div>
+        </div>
+        <div class="bp-goods-item">
+          <img src="images/goods_keyring.jpg" alt="키링">
+          <div class="bp-goods-item-cap">Keyring Display</div>
+        </div>
+        <div class="bp-goods-item">
+          <img src="images/machine.jpg" alt="기기">
+          <div class="bp-goods-item-cap">Sticker Machine</div>
+        </div>
+        <div class="bp-goods-item">
+          <img src="images/signage.jpg" alt="사이니지">
+          <div class="bp-goods-item-cap">In-Booth Signage</div>
+        </div>
+        <div class="bp-goods-item">
+          <img src="images/store_goods.jpg" alt="굿즈">
+          <div class="bp-goods-item-cap">Goods Shelf</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHILOSOPHY CONDENSED -->
+  <!-- INSTAGRAM REELS -->
+  <section class="bp-reels">
+    <div class="bp-reels-inner">
+      <div class="bp-reels-header reveal">
+        <p class="section-label" style="margin-bottom:6px;">As Seen On</p>
+        <h2 class="section-title" style="font-size:clamp(22px,3vw,38px);margin-bottom:0;">인스타그램에서<br>만나다</h2>
+      </div>
+      <div class="bp-reels-grid">
+        <div class="bp-reel-card reveal">
+          <div class="bp-reel-label">스티커로 꾸미자!</div>
+          <div class="bp-reel-embed">
+            <iframe src="https://www.instagram.com/reel/DJJANnzyIB9/embed/" 
+              frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen="true">
+            </iframe>
+          </div>
+        </div>
+        <div class="bp-reel-card reveal">
+          <div class="bp-reel-label">STICK'ON — Coming Soon</div>
+          <div class="bp-reel-embed">
+            <iframe src="https://www.instagram.com/reel/DOnqlZSErZ2/embed/"
+              frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen="true">
+            </iframe>
+          </div>
+        </div>
+        <div class="bp-reel-card reveal">
+          <div class="bp-reel-label">ID 카드 프레임 DIY</div>
+          <div class="bp-reel-embed">
+            <iframe src="https://www.instagram.com/reel/DPN_z4iEv3-/embed/"
+              frameborder="0" scrolling="no" allowtransparency="true" allowfullscreen="true">
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bp-phil-mini">
+    <div class="bp-phil-mini-inner">
+      <div class="bp-phil-mini-left reveal">
+        <p class="section-label" style="margin-bottom:12px;">Why STICK'ON</p>
+        <h2>왜<br>STICK'ON<br>인가</h2>
+      </div>
+      <div class="bp-phil-mini-right">
+        <div class="bp-phil-mini-card reveal">
+          <div class="bp-phil-mini-num">01</div>
+          <h3 class="bp-phil-mini-title">테마가 달라요</h3>
+          <p class="bp-phil-mini-desc">스티커 포토부터 3D 키링·크리스마스·추석까지. 시즌마다 새로운 세계를 만나보세요.</p>
+        </div>
+        <div class="bp-phil-mini-card reveal">
+          <div class="bp-phil-mini-num">02</div>
+          <h3 class="bp-phil-mini-title">굿즈가 매출을 만들어요</h3>
+          <p class="bp-phil-mini-desc">ID카드, 키링, 아크릴 굿즈. 사진 한 장이 자연스럽게 더 큰 경험으로 이어져요.</p>
+        </div>
+        <div class="bp-phil-mini-card reveal">
+          <div class="bp-phil-mini-num">03</div>
+          <h3 class="bp-phil-mini-title">재방문이 저절로 돼요</h3>
+          <p class="bp-phil-mini-desc">분기별 시즌 프레임. 다시 찾아올 이유가 늘 새롭게 생겨요.</p>
+        </div>
+        <div class="bp-phil-mini-card reveal">
+          <div class="bp-phil-mini-num">04</div>
+          <h3 class="bp-phil-mini-title">이미 검증된 글로벌 포맷이에요</h3>
+          <p class="bp-phil-mini-desc">한국과 말레이시아에서 이미 운영 중. 데이터로 증명된 브랜드입니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BP CTA -->
+  <div class="bp-cta">
+    <h2 class="reveal">지금이<br>적기예요</h2>
+    <p class="reveal">50호점까지 특별 가맹 조건을 제공해드려요<br>IFS 프랜차이즈 박람회 2026</p>
+    <button class="btn-primary reveal" onclick="switchPage('franchise')" style="font-size:1.05rem;padding:16px 44px;">
+      가맹 안내 보기 →
+    </button>
+  </div>
+
+</div><!-- /page-brand -->
+
+
+<!-- ══════════════════════════════════
+     PAGE 2 : 가맹 안내
+══════════════════════════════════ -->
+<div class="page" id="page-franchise">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-img"></div>
+  <div class="hero-bg"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-glass">
+    <p class="hero-eyebrow">Sticker Photo · Franchise Open</p>
+    <h1 class="hero-title">
+      <span class="line1">STICK</span>
+      <span class="line2">ON</span>
+    </h1>
+    <p class="hero-sub">차세대 포토부스는 스티커</p>
+    <div class="hero-trust">
+      <span class="trust-chip"><span class="chip-dot yellow"></span>50호점 특별 조건</span>
+      <span class="trust-chip"><span class="chip-dot pink"></span>🇰🇷 · 🇲🇾 운영 중</span>
+      <span class="trust-chip"><span class="chip-dot cyan"></span>샵인샵 지원</span>
+      <span class="trust-chip"><span class="chip-dot purple"></span>시즌 IP 콜라보</span>
+    </div>
+    <div class="hero-cta">
+      <a href="#form" class="btn-primary">가맹 문의하기 →</a>
+    </div>
+  </div>
+</section>
+
+<!-- BRAND INTRO -->
+<section class="brand-section">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p class="section-label reveal">Brand Story</p>
+    <h2 class="section-title reveal">이제는<br>붙여요</h2>
+    <div class="brand-grid" style="margin-top:44px;">
+      <div class="brand-card g-card reveal">
+        <span class="brand-card-num">01</span>
+        <span class="brand-card-icon">✂️</span>
+        <div class="brand-card-title">스티커 포토</div>
+        <p class="brand-card-desc">찍고, 받고, 붙여요.<br>포맷이 경험이 돼요.</p>
+      </div>
+      <div class="brand-card g-card reveal">
+        <span class="brand-card-num">02</span>
+        <span class="brand-card-icon">🗓</span>
+        <div class="brand-card-title">시즌 콘텐츠</div>
+        <p class="brand-card-desc">매 시즌 새로운 이유.<br>재방문이 구조 안에 있어요.</p>
+      </div>
+      <div class="brand-card g-card reveal">
+        <span class="brand-card-num">03</span>
+        <span class="brand-card-icon">🎭</span>
+        <div class="brand-card-title">IP 콜라보</div>
+        <p class="brand-card-desc">협업이 한정판이 돼요.<br>한정판이 수익이 돼요.</p>
+      </div>
+      <div class="brand-card g-card reveal">
+        <span class="brand-card-num">04</span>
+        <span class="brand-card-icon">🏪</span>
+        <div class="brand-card-title">유통 확장</div>
+        <p class="brand-card-desc">독립 · 샵인샵 · 렌탈.<br>상황에 맞게 선택할 수 있어요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY STICKON — 브랜드 선언 카드 -->
+<section class="why-section">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p class="section-label reveal">Why STICK'ON</p>
+    <h2 class="section-title reveal" style="color:var(--white)">선택의 이유</h2>
+    <div class="why-grid">
+      <div class="why-card g-card reveal">
+        <span class="why-card-icon">📸</span>
+        <div class="why-declaration">검증된 포맷<br>열린 시장</div>
+        <p class="why-sub">스티커 포토 수요는 이미 있어요.</p>
+      </div>
+      <div class="why-card g-card reveal">
+        <span class="why-card-icon">💰</span>
+        <div class="why-declaration">낮은 진입<br>유연한 구조</div>
+        <p class="why-sub">샵인샵으로 기존 공간을 바로 활용할 수 있어요.</p>
+      </div>
+      <div class="why-card g-card reveal">
+        <span class="why-card-icon">📣</span>
+        <div class="why-declaration">마케팅은<br>본사가 함께</div>
+        <p class="why-sub">IP 콜라보, 시즌 캠페인. 본사가 직접 진행해요.</p>
+      </div>
+      <div class="why-card g-card reveal">
+        <span class="why-card-icon">🔄</span>
+        <div class="why-declaration">재방문이<br>설계된 구조</div>
+        <p class="why-sub">반복 방문의 이유가 늘 새롭게 생겨요.</p>
+      </div>
+      <div class="why-card g-card reveal">
+        <span class="why-card-icon">📦</span>
+        <div class="why-declaration">안정적<br>소모품 공급</div>
+        <p class="why-sub">본사가 정기 공급해요. 운영 공백이 없어요.</p>
+      </div>
+      <div class="why-card g-card reveal">
+        <span class="why-card-icon">🌏</span>
+        <div class="why-declaration">그룹 브랜드<br>신뢰 자산</div>
+        <p class="why-sub">더필름·BYTP 포트폴리오 안에 함께해요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ICON ROW -->
+<section class="icon-row-section">
+  <div style="max-width:1100px;margin:0 auto;text-align:center;">
+    <p class="section-label reveal" style="text-align:center;margin-bottom:40px;">At a Glance</p>
+    <div class="icon-row reveal">
+      <div class="icon-item g-card"><span class="ico">🏪</span><span class="lbl">샵인샵</span></div>
+      <div class="icon-item g-card"><span class="ico">🎭</span><span class="lbl">IP 콜라보</span></div>
+      <div class="icon-item g-card"><span class="ico">🌏</span><span class="lbl">글로벌 확장</span></div>
+      <div class="icon-item g-card"><span class="ico">📦</span><span class="lbl">안정 공급</span></div>
+      <div class="icon-item g-card"><span class="ico">🤖</span><span class="lbl">무인 운영</span></div>
+      <div class="icon-item g-card"><span class="ico">🔄</span><span class="lbl">시즌 업데이트</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats-section">
+  <div class="stats-grid">
+    <div class="stat-item g-card reveal">
+      <span class="stat-num">50<span style="font-size:0.45em">호점</span></span>
+      <div class="stat-label">특별 가맹 조건</div>
+    </div>
+    <div class="stat-item g-card reveal">
+      <span class="stat-num">2</span>
+      <div class="stat-label">개국 운영 중</div>
+      <div class="stat-sub">🇰🇷 한국 &nbsp;·&nbsp; 🇲🇾 말레이시아</div>
+    </div>
+    <div class="stat-item g-card reveal">
+      <span class="stat-num">'25</span>
+      <div class="stat-label">더필름 합정 론칭</div>
+    </div>
+    <div class="stat-item g-card reveal">
+      <span class="stat-num">3</span>
+      <div class="stat-label">가지 입점 형태</div>
+      <div class="stat-sub">독립 · 샵인샵 · 렌탈</div>
+    </div>
+  </div>
+  <div class="stats-badge reveal">
+    <span class="badge">✓ 더필름 합정점</span>
+    <span class="badge">✓ 더필름 보령점 샵인샵</span>
+    <span class="badge">✓ 말레이시아 1호점</span>
+    <span class="badge">✓ IFS 2026 박람회 공식 참가</span>
+    <span class="badge">✓ 50호점 특별 조건</span>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section class="gallery-section">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p class="section-label reveal">Real Results</p>
+    <h2 class="section-title reveal" style="color:var(--white)">결과물이<br>말해줘요</h2>
+    <div class="carousel-wrap reveal">
+      <div class="carousel-track" id="carouselTrack">
+        <div class="carousel-card">
+          <img src="images/sample_1.jpg" alt="스티커 포토" onerror="this.parentElement.classList.add('no-img')">
+          <div class="carousel-fallback"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,230,0,0.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>스티커 포토</span></div>
+          <div class="carousel-tag">스티커 포토</div>
+        </div>
+        <div class="carousel-card">
+          <img src="images/sample_2.jpg" alt="DIY 프레임" onerror="this.parentElement.classList.add('no-img')">
+          <div class="carousel-fallback"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,230,0,0.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>DIY 프레임</span></div>
+          <div class="carousel-tag">DIY 프레임</div>
+        </div>
+        <div class="carousel-card">
+          <img src="images/sample_3.jpg" alt="굿즈" onerror="this.parentElement.classList.add('no-img')">
+          <div class="carousel-fallback"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(0,245,255,0.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>굿즈</span></div>
+          <div class="carousel-tag">굿즈</div>
+        </div>
+        <div class="carousel-card">
+          <img src="images/ornament.jpg" alt="IP 콜라보" onerror="this.parentElement.classList.add('no-img')">
+          <div class="carousel-fallback"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,60,172,0.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>IP 콜라보</span></div>
+          <div class="carousel-tag">IP 콜라보</div>
+        </div>
+        <div class="carousel-card">
+          <img src="images/hangawi.jpg" alt="굿즈 확장" onerror="this.parentElement.classList.add('no-img')">
+          <div class="carousel-fallback"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(192,132,252,0.3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>굿즈 확장</span></div>
+          <div class="carousel-tag">굿즈 확장</div>
+        </div>
+      </div>
+      <button class="carousel-btn prev" id="carouselPrev" aria-label="이전">&#8592;</button>
+      <button class="carousel-btn next" id="carouselNext" aria-label="다음">&#8594;</button>
+    </div>
+    <div class="carousel-dots" id="carouselDots"></div>
+    <p style="color:rgba(255,255,255,0.16);font-size:0.65rem;font-family:'Noto Sans KR',sans-serif; font-weight:500;margin-top:20px;text-align:right;">
+      STICK'ON · Sticker Photo · Keyring Goods · Sweet Instants, Timeless Emotions
+    </p>
+  </div>
+</section>
+
+<!-- PROCESS — 3단계 -->
+<section class="process-section">
+  <div style="max-width:700px;margin:0 auto;">
+    <p class="section-label reveal">How to Start</p>
+    <h2 class="section-title reveal">3단계</h2>
+    <div class="process-steps">
+      <div class="process-step reveal">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h3>문의 · 상담</h3>
+          <p>폼 접수 → 1–2 영업일 내 연락</p>
+        </div>
+      </div>
+      <div class="process-step reveal">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h3>상권 분석 · 계약</h3>
+          <p>희망 지역 분석 후 계약 진행</p>
+        </div>
+      </div>
+      <div class="process-step reveal">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h3>인테리어 · 오픈</h3>
+          <p>본사 가이드 공사 → 오픈 지원</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section class="form-section" id="form">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p class="section-label reveal" style="text-align:center">Franchise Inquiry</p>
+    <h2 class="section-title reveal" style="color:var(--white);text-align:center">가맹 문의</h2>
+    <div class="form-inner reveal">
+      <div class="form-box">
+        <div id="formContent">
+          <div class="form-row-double">
+            <div class="form-row">
+              <label>이름 *</label>
+              <input type="text" id="f-name" placeholder="홍길동" required>
+            </div>
+            <div class="form-row">
+              <label>연락처 *</label>
+              <input type="tel" id="f-phone" placeholder="010-0000-0000" maxlength="13" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>희망 지역 *</label>
+            <select id="f-region" required>
+              <option value="">지역 선택</option>
+              <option>서울</option><option>경기/인천</option><option>부산/경남</option>
+              <option>대구/경북</option><option>광주/전라</option><option>대전/충청</option>
+              <option>강원</option><option>제주</option><option>기타</option>
+            </select>
+          </div>
+          <div class="form-row-double">
+            <div class="form-row">
+              <label>투자 가능 금액</label>
+              <select id="f-budget">
+                <option value="">선택</option>
+                <option>3,000만원 미만</option><option>3,000 ~ 5,000만원</option>
+                <option>5,000 ~ 1억원</option><option>1억원 이상</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>창업 예정 시기</label>
+              <select id="f-timing">
+                <option value="">선택</option>
+                <option>1개월 이내</option><option>3개월 이내</option>
+                <option>6개월 이내</option><option>1년 이내</option><option>미정</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>문의 내용</label>
+            <textarea id="f-message" placeholder="궁금한 점을 자유롭게 작성해 주세요."></textarea>
+          </div>
+          <!-- 개인정보 동의 -->
+          <div class="form-row" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+              <input type="checkbox" id="f-privacy" style="all:revert;width:17px;height:17px;margin-top:2px;accent-color:#FF3CAC;cursor:pointer;flex-shrink:0;">
+              <label for="f-privacy" style="font-size:0.85rem;color:rgba(255,255,255,0.55);cursor:pointer;line-height:1.5;font-family:'Noto Sans KR',sans-serif;font-weight:400;letter-spacing:0;text-transform:none;">
+                [필수] 개인정보 수집·이용에 동의합니다.
+              </label>
+            </div>
+            <div style="padding:13px 15px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:0.72rem;color:rgba(255,255,255,0.28);font-family:'Noto Sans KR',sans-serif;line-height:1.85;">
+              수집 항목: 이름, 연락처, 희망 지역, 투자 가능 금액, 창업 예정 시기, 문의 내용<br>
+              수집 목적: 가맹 상담 및 안내 / 보유 기간: 상담 완료 후 1년<br>
+              개인정보보호법 제15조에 의거
+            </div>
+          </div>
+          <button class="btn-submit" id="submitBtn">문의 접수하기 →</button>
+          <p class="form-notice">입력하신 정보는 가맹 상담 목적으로만 사용됩니다.</p>
+        </div>
+        <div class="success-msg" id="successMsg">
+          <div class="big">✓ 접수 완료</div>
+          <p>가맹 문의가 접수되었습니다.<br>담당자가 1–2 영업일 내 연락드리겠습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">STICK'ON</div>
+  <p>차세대 포토부스는 스티커</p>
+  <p style="margin-top:6px;">© 2025 STICK'ON. All rights reserved.</p>
+</footer>
+
+</div><!-- /page-franchise -->
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX - 9 + 'px';
+    cursor.style.top  = e.clientY - 9 + 'px';
+  });
+  document.querySelectorAll('a,button,select,input,textarea').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('grow'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('grow'));
+  });
+
+  // SCROLL REVEAL
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // CAROUSEL
+  (function() {
+    const track    = document.getElementById('carouselTrack');
+    const cards    = track ? Array.from(track.querySelectorAll('.carousel-card')) : [];
+    const dotsWrap = document.getElementById('carouselDots');
+    const btnPrev  = document.getElementById('carouselPrev');
+    const btnNext  = document.getElementById('carouselNext');
+    if (!cards.length) return;
+    let current = 0, autoTimer;
+    const visibleCount = () => window.innerWidth <= 480 ? 1 : window.innerWidth <= 768 ? 1 : 3;
+    const cardWidth    = () => cards[0].offsetWidth + 14;
+    const maxIdx       = () => Math.max(0, cards.length - visibleCount());
+    const dots = [];
+    const goTo = idx => {
+      current = Math.max(0, Math.min(idx, maxIdx()));
+      track.style.transform = `translateX(-${current * cardWidth()}px)`;
+      dots.forEach((d,i) => d.classList.toggle('active', i === current));
+    };
+    for (let i = 0; i <= maxIdx(); i++) {
+      const d = document.createElement('button');
+      d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      d.addEventListener('click', () => { goTo(i); resetAuto(); });
+      dotsWrap.appendChild(d); dots.push(d);
+    }
+    btnPrev && btnPrev.addEventListener('click', () => { goTo(current - 1); resetAuto(); });
+    btnNext && btnNext.addEventListener('click', () => { goTo(current + 1); resetAuto(); });
+    const startAuto = () => { autoTimer = setInterval(() => goTo(current >= maxIdx() ? 0 : current + 1), 3200); };
+    const resetAuto = () => { clearInterval(autoTimer); startAuto(); };
+    let tx = 0;
+    track.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive:true });
+    track.addEventListener('touchend',   e => { const d = tx - e.changedTouches[0].clientX; if(Math.abs(d)>40){ goTo(d>0?current+1:current-1); resetAuto(); } });
+    window.addEventListener('resize', () => goTo(Math.min(current, maxIdx())));
+    goTo(0); startAuto();
+  })();
+
+  // 연락처 하이픈
+  document.getElementById('f-phone').addEventListener('input', function(e) {
+    let v = e.target.value.replace(/\D/g,'');
+    if      (v.length <= 3) e.target.value = v;
+    else if (v.length <= 7) e.target.value = v.slice(0,3)+'-'+v.slice(3);
+    else                    e.target.value = v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7,11);
+  });
+
+  // FORM SUBMIT
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysr7fhwtYsbMoCsdcoXTJjz7PdzTsmMgPqCCwlN5CI7VWrtSwc_nfItpNoTHorYvDbxw/exec';
+  document.getElementById('submitBtn').addEventListener('click', async function() {
+    const name   = document.getElementById('f-name').value.trim();
+    const phone  = document.getElementById('f-phone').value.trim();
+    const region = document.getElementById('f-region').value;
+    if (!name || !phone || !region) { alert('이름, 연락처, 희망 지역은 필수 항목입니다.'); return; }
+    if (!document.getElementById('f-privacy').checked) { alert('개인정보 수집·이용에 동의해주세요.'); return; }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = '접수 중...';
+    const params = new URLSearchParams({
+      이름: name, 연락처: phone, 희망지역: region,
+      투자가능금액: document.getElementById('f-budget').value  || '미입력',
+      창업예정시기: document.getElementById('f-timing').value  || '미입력',
+      문의내용:    document.getElementById('f-message').value  || '없음',
+      접수일시:    new Date().toLocaleString('ko-KR')
+    });
+    try {
+      await fetch(SCRIPT_URL + '?' + params.toString(), { method:'GET', mode:'no-cors' });
+      document.getElementById('formContent').style.display = 'none';
+      document.getElementById('successMsg').style.display  = 'block';
+    } catch(err) {
+      alert('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      btn.disabled = false; btn.textContent = '문의 접수하기 →';
+    }
+  });
+
+  // PAGE SWITCH
+  function switchPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.page-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.page-nav-btn').forEach(b => {
+      if (b.textContent.includes(page === 'brand' ? '브랜드' : '가맹')) b.classList.add('active');
+    });
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+</script>
+
+</body>
+</html>
